@@ -313,7 +313,7 @@ impl<'hir> Map<'hir> {
             Some(owner.node.into())
         } else {
             let owner = self.tcx.hir_owner_nodes(id.owner).as_owner()?;
-            let node = owner.nodes[id.local_id].as_ref()?;
+            let node = owner.nodes.get(id.local_id)?.as_ref()?;
             Some(node.node)
         }
     }
