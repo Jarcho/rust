@@ -1228,6 +1228,7 @@ pub fn walk_fn<'v, V: Visitor<'v>>(
     body_id: BodyId,
     _: LocalDefId,
 ) -> V::Result {
+    // When changing this make sure to change `LateContextAndPass::visit_fn` in `rustc_lint`.
     try_visit!(visitor.visit_fn_decl(function_declaration));
     try_visit!(walk_fn_kind(visitor, function_kind));
     visitor.visit_nested_body(body_id)

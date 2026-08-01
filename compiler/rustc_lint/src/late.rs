@@ -94,13 +94,9 @@ impl<'tcx, T: LateLintPass<'tcx>> hir_visit::Visitor<'tcx> for LateContextAndPas
     fn visit_nested_body(&mut self, body_id: hir::BodyId) {
         let old_enclosing_body = self.context.enclosing_body.replace(body_id);
         let old_typeck_results = self.context.typeck_results;
-
-        // The body and typeck results are also set in `visit_fn`.
-        // Only fetch the results if this is for a new body.
-        if old_enclosing_body != Some(body_id) && !self.actually_rustdoc {
+        if !self.actually_rustdoc {
             self.context.typeck_results = Some(self.context.tcx.typeck_body(body_id));
         }
-
         let body = self.context.tcx.hir_body(body_id);
         self.visit_body(body);
         self.context.enclosing_body = old_enclosing_body;
@@ -192,7 +188,13 @@ impl<'tcx, T: LateLintPass<'tcx>> hir_visit::Visitor<'tcx> for LateContextAndPas
         }
         let body = self.context.tcx.hir_body(body_id);
         lint_callback!(self, check_fn, fk, decl, body, span, id);
-        hir_visit::walk_fn(self, fk, decl, body_id, id);
+
+        // Inline `walk_fn` to avoid the re-fetching the typeck results and HIR
+        // body when it ultimately calls `visit_nested_body`.
+        self.visit_fn_decl(decl);
+        hir_visit::walk_fn_kind(self, fk);
+        self.visit_body(body);
+
         self.context.enclosing_body = old_enclosing_body;
         self.context.typeck_results = old_typeck_results;
     }
